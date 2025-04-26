@@ -1,0 +1,13 @@
+[Unit]
+Description=Brightness Wrangler - Gamma Control for DeckSight in X11
+After=plasma-kwin_x11.service
+PartOf=plasma-kwin_x11.service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/brightness-wrangler.sh
+Restart=on-failure
+RestartSec=1
+
+[Install]
+WantedBy=plasma-kwin_x11.service
