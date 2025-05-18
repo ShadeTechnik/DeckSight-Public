@@ -24,27 +24,26 @@ fi
 
 # --- Main Event Loop ---
 while true; do
-    # Wait for brightness file change or timeout
     inotifywait -e modify -t 1 "$BRIGHTNESS_PATH" >/dev/null 2>&1
 
-    # If brightness file exists, process it
     if [[ -f "$BRIGHTNESS_PATH" ]]; then
-        value=$(cat "$BRIGHTNESS_PATH")
+        value=$(< "$BRIGHTNESS_PATH")
 
         if [[ "$value" -le 500 ]]; then
-            brightness=$MIN_BRIGHTNESS
+            brightness="$MIN_BRIGHTNESS"
         else
-            brightness=$(awk "BEGIN { print ($value / $BRIGHTNESS_MAX) }")
+            brightness=$(awk -v v="$value" -v max="$BRIGHTNESS_MAX" \
+                              'BEGIN { printf "%.4f", v / max }')
 
-            if (( $(echo "$brightness > $MAX_BRIGHTNESS" | bc -l) )); then
-                brightness=$MAX_BRIGHTNESS
-            fi
-            if (( $(echo "$brightness < $MIN_BRIGHTNESS" | bc -l) )); then
-                brightness=$MIN_BRIGHTNESS
-            fi
+            # Clamp to MAX
+            brightness=$(awk -v b="$brightness" -v max="$MAX_BRIGHTNESS" \
+                              'BEGIN { print (b > max) ? max : b }')
+
+            # Clamp to MIN
+            brightness=$(awk -v b="$brightness" -v min="$MIN_BRIGHTNESS" \
+                              'BEGIN { print (b < min) ? min : b }')
         fi
 
-        # Apply brightness to display
         xrandr --output "$DISPLAY_NAME" --brightness "$brightness"
     fi
 done

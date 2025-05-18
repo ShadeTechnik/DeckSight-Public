@@ -1,2 +1,2 @@
 # DeckSight-Public
- DeckSight utillities
+ DeckSight BIOS and utillities
