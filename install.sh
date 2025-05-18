@@ -6,7 +6,7 @@ PIPE="/tmp/decksight-update-pipe"
 LOGFILE="/tmp/decksight-install.log"
 exec > >(tee -a "$LOGFILE") 2>&1
 
-TARBALL_URL="https://github.com/shadetechnik/downloads/releases/latest/download/DeckSight_release_01.tar.gz"
+TARBALL_URL="https://github.com/ShadeTechnik/DeckSight-Public/releases/download/v01-test/DeckSight_release_01.tar.gz"
 PATCHED_BIOS_VERSION="F7A0131"
 
 cleanup() {
