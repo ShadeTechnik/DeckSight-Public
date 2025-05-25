@@ -41,7 +41,7 @@ main() {
         fi
     fi
 
-    zenity --title "DeckSight" --info --width=600 --text="You can first install the DeckSight utilities (recommended), then the BIOS.\n\nOnce the BIOS is installed, the stock LCD will no longer operate properly (if currently installed).\n\nAfter the DeckSight BIOS is installed, you can install the DeckSight OLED.\n\nIf DeckSight is already installed, you can ignore this warning and use this installer to update or re-install the utilities or BIOS.\n\nIf this is the initial installation and the LCD is currently installed in the Steam Deck, it is recommended that you connect an external monitor (mirrored) and keyboard/mouse so that you can verify when the BIOS has finished installing and the Steam Deck has rebooted."
+    zenity --title "DeckSight" --info --width=600 --text="You can first install the DeckSight extras (recommended), then the BIOS.\n\nOnce the BIOS is installed, the stock LCD will no longer operate properly (if currently installed).\n\nAfter the DeckSight BIOS is installed, you can install the DeckSight OLED.\n\nIf DeckSight is already installed, you can ignore this warning and use this installer to update or re-install the extras or BIOS.\n\nIf this is the initial installation and the LCD is currently installed in the Steam Deck, it is recommended that you connect an external monitor (mirrored) and keyboard/mouse so that you can verify when the BIOS has finished installing and the Steam Deck has rebooted."
 
     if zenity --title "DeckSight" --question --text 'Do you want to install/remove extras?'; then
         tmp_dir=$(mktemp -d)
