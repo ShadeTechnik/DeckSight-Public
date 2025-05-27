@@ -2,15 +2,12 @@
 
 set -o pipefail
 
-PIPE="/tmp/decksight-update-pipe"
 LOGFILE="/tmp/decksight-install.log"
 exec > >(tee -a "$LOGFILE") 2>&1
 
-TARBALL_URL="https://github.com/ShadeTechnik/DeckSight-Public/releases/download/v01-test/DeckSight_release_01.tar.gz"
 PATCHED_BIOS_VERSION="F7A0131"
 
 cleanup() {
-    rm -f "$PIPE"
     [[ -n "$tmp_dir" && -d "$tmp_dir" ]] && rm -rf "$tmp_dir"
 }
 trap cleanup EXIT
@@ -43,57 +40,68 @@ main() {
 
     zenity --title "DeckSight" --info --width=600 --text="You can first install the DeckSight extras (recommended), then the BIOS.\n\nOnce the BIOS is installed, the stock LCD will no longer operate properly (if currently installed).\n\nAfter the DeckSight BIOS is installed, you can install the DeckSight OLED.\n\nIf DeckSight is already installed, you can ignore this warning and use this installer to update or re-install the extras or BIOS.\n\nIf this is the initial installation and the LCD is currently installed in the Steam Deck, it is recommended that you connect an external monitor (mirrored) and keyboard/mouse so that you can verify when the BIOS has finished installing and the Steam Deck has rebooted."
 
-    if zenity --title "DeckSight" --question --text 'Do you want to install/remove extras?'; then
-        tmp_dir=$(mktemp -d)
-        curl --fail --location --output /tmp/decksight.tgz "$TARBALL_URL" || {
-            zenity --title "DeckSight" --error --text "Failed to retrieve release archive."
-            exit 1
-        }
-        tar -xzf /tmp/decksight.tgz -C "$tmp_dir"
+        action=$(zenity --title "DeckSight" --list \
+        --radiolist \
+        --height=200 --width=300 \
+        --text="Install or remove DeckSight extras?" \
+        --column "Select" --column "Action" \
+        TRUE "Install" FALSE "Remove") || exit 0
 
-        extras=$(zenity --title "DeckSight" --list --checklist \
-            --column "Install" --column "Component" \
-            TRUE "Gamescope Script" TRUE "Brightness Wrangler")
+    extras=$(zenity --title "DeckSight" --list --checklist \
+        --width=500 --height=440 \
+        --text="Choose which components to $action:\n\n\
+    • Gamescope Script – framerate handling and modesetting in gamescope.\n\
+    • Brightness Wrangler – Gamma-based brightness control service in Desktop." \
+        --column "Apply" --column "Component" \
+        TRUE "Gamescope Script" \
+        TRUE "Brightness Wrangler") || exit 0
 
-        for choice in ${extras//|/ }; do
-            case "$choice" in
-                "Gamescope Script")
+
+    for choice in ${extras//|/ }; do
+        case "$choice" in
+            "Gamescope Script")
+                if [[ "$action" == "Install" ]]; then
                     mkdir_all ~/.config/gamescope/scripts/
-                    cp -v "$tmp_dir/Gamescope/DeckSight.lua" ~/.config/gamescope/scripts/
-                    ;;
-                "Brightness Wrangler")
+                    cp -v "Gamescope/DeckSight.lua" ~/.config/gamescope/scripts/
+                else
+                    rm -v ~/.config/gamescope/scripts/DeckSight.lua
+                fi
+                ;;
+            "Brightness Wrangler")
+                if [[ "$action" == "Install" ]]; then
                     mkdir_all ~/.config/systemd/user/
-                    cp -v "$tmp_dir/brightness-wrangler/brightness-wrangler.service" ~/.config/systemd/user/
-                    cp -av "$tmp_dir/brightness-wrangler/brightness-wrangler.sh" ~/.local/bin/
+                    cp -v "brightness-wrangler/brightness-wrangler.service" ~/.config/systemd/user/
+                    cp -av "brightness-wrangler/brightness-wrangler.sh" ~/.local/bin/
                     systemctl --user daemon-reload
                     systemctl --user enable brightness-wrangler.service
                     systemctl --user restart brightness-wrangler.service
-                    ;;
-            esac
-        done
-    fi
+                else
+                    systemctl --user disable brightness-wrangler.service
+                    systemctl --user stop brightness-wrangler.service
+                    rm -v ~/.config/systemd/user/brightness-wrangler.service
+                    rm -v ~/.local/bin/brightness-wrangler.sh
+                    systemctl --user daemon-reload
+                fi
+                ;;
+        esac
+    done
 
     read -r current_bios_version < /sys/class/dmi/id/bios_version
     current_bios_version="${current_bios_version//[$'\r\n']}"
 
     if [[ "$current_bios_version" != "$PATCHED_BIOS_VERSION" ]]; then
-        zenity --title "DeckSight" --warning \
-               --text="Detected older BIOS version: ${current_bios_version}.\n\
-This installer will install the current patched BIOS version: ${PATCHED_BIOS_VERSION}.\n\
-This is expected if you are updating."
+        zenity --title "DeckSight" --width=400 --warning \
+               --text="Detected older BIOS version: ${current_bios_version}.\n\This installer will install the current patched BIOS version: ${PATCHED_BIOS_VERSION}.\n\This is expected if you are updating."
     fi
 
     if ! zenity --title "DeckSight" --question --text "Proceed with BIOS update to DeckSight ${PATCHED_BIOS_VERSION}?"; then
         exit 0
     fi
 
-    tmp_dir=$(mktemp -d)
-    # BIOS already extracted from release tarball above
-
-    bios_fd_path=$(find "$tmp_dir/bios" -type f -name '*.fd' | head -n 1)
+    bios_fd_path=$(find bios -type f -name '*.fd' | head -n 1)
 
     if [[ -z "$bios_fd_path" ]]; then
-        zenity --title "DeckSight" --error --text "No .fd BIOS file found in release archive."
+        zenity --title "DeckSight" --error --text "No .fd BIOS file found in extracted archive."
         exit 1
     fi
 
