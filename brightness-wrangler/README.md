@@ -2,11 +2,7 @@
 
 SteamOS on the Steam Deck uses X11 for it's desktop mode display server. In order to control the display brightness via software we must use the brightness-wrangler service
 
-
 ## Usage
-- install package bc
-    - `$ sudo pacman -S bc`
-    
 - move brightness-wrangler.sh to `~/.local/bin/`
 - create directory `~/.config/systemd/user/`
 - move brightness-wrangler.service to `~/.config/systemd/user/`
