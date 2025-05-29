@@ -16,6 +16,7 @@
     - If using an alternate OS like Bazzite, which uses KDE Plasma under Wayland, the icc profile can be applied from display settings, however it is probably unnecessary in that case. Enabling "Wide Color Gamut" makes the color accurate. Due to the hardware EDID limitation of the LCD Steam Deck, KDE Plasma may not pick up the wide color gamut abillity, otherwise it can be enabled from display settings. kscreen-doctor can also enable wide color gamut if it can see the display as "capable" which it may not. In either case, the icc profile can be applied easily in display settings in KDE/Wayland based Desktops. An ICC profile has no effect in Gamescope/Game UI
  
 - # Installation
+    - Make sure sudo password is set in SteamOS before running
     - install.sh is a Zenity based graphical installer.
     - It will first allow installing the "extras" (Gamescope script and brightness-wrangler). Then it will install the BIOS
     
