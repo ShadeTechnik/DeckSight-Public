@@ -19,9 +19,9 @@
     - install.sh is a Zenity based graphical installer.
     - It will first allow installing the "extras" (Gamescope script and brightness-wrangler). Then it will install the BIOS
     
-    ## Automatic install
+## Automatic install
     - Download and extract the release or clone the repo. Run $./install.sh.
     - Shadetechnik.com has a downloadable .desktop file that will download, extract, and execute the release installer for a 100% double-click only install.
     - Installer can be re-run to remove components or re-flash the BIOS (only necessary for updates). You can't "uninstall" the BIOS, you can only re-install the stock BIOS which would cause DeckSight not to work at all so there is no option to install the stock BIOS from the DeckSight installer.
-    ## Manual install
+## Manual install
     - It's fairly easy to install all components manually just by following the readme's in each component's directory.
