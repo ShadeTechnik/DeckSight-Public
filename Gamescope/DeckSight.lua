@@ -1,9 +1,12 @@
 -- DeckSight OLED - Static Dynamic Refresh Range (40-80Hz)
 
-local deckSight_refresh_rates = {}
-for i = 40, 80 do
-    table.insert(deckSight_refresh_rates, i)
-end
+local deckSight_refresh_rates = {
+    40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+    50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+    60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+    70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+    80
+}
 
 local deckSight_modegen = function(base_mode, refresh)
     local mode = base_mode

@@ -1,5 +1,4 @@
 #!/bin/bash
-# This install script assumes it is being run from the helper script and has already extracted all files to the /tmp directory
 
 set -o pipefail
 
@@ -85,11 +84,8 @@ main() {
                     fi
 
                     mkdir_all "$HOME/.config/systemd/user/"
-                    cp -v "$SCRIPT_DIR/brightness-wrangler/brightness-wrangler.service" "$HOME/.config/systemd/user/"
-
-                    mkdir_all "$HOME/.local/bin/"
                     cp -av "$SCRIPT_DIR/brightness-wrangler/brightness-wrangler.sh" "$HOME/.local/bin/"
-
+                    chmod +x "$HOME/.local/bin/brightness-wrangler.sh"
                     systemctl --user daemon-reload
                     systemctl --user enable brightness-wrangler.service
                     systemctl --user restart brightness-wrangler.service
