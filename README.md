@@ -15,7 +15,7 @@
     - This ICC profile was generated with a colorimeter and provides good color representation for SDR in X11 based desktops (SteamOS), it's otherwise a bit over saturated. There is currently no good way to apply it in SteamOS as KDE Plasma does not support ICC profiles unless the packages colord and colord-kde are installed but these packages are outside of SteamOS repos. Enabling the holo repo will allow the installation of these packages but in SteamOS they won't survive an update. Once colord and colord-kde are installed the ICC profile can easily be applied from display settings. 
     - If using an alternate OS like Bazzite, which uses KDE Plasma under Wayland, the icc profile can be applied from display settings, however it is probably unnecessary in that case. Enabling "Wide Color Gamut" makes the color accurate. Due to the hardware EDID limitation of the LCD Steam Deck, KDE Plasma may not pick up the wide color gamut abillity, otherwise it can be enabled from display settings. kscreen-doctor can also enable wide color gamut if it can see the display as "capable" which it may not. In either case, the icc profile can be applied easily in display settings in KDE/Wayland based Desktops. An ICC profile has no effect in Gamescope/Game UI
  
-# Installation
+- # Installation
     - install.sh is a Zenity based graphical installer.
     - It will first allow installing the "extras" (Gamescope script and brightness-wrangler). Then it will install the BIOS
     
