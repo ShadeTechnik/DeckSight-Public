@@ -1,8 +1,9 @@
 # EDID Files contained here.
 
-edid.bin is the base-only EDID that is patched into the DeckSight BIOS. decksight_edid.bin is an EDID with the CEA extension block that can be used by kernel parameter loading
+edid.bin is the base-only EDID that is patched into the DeckSight BIOS. decksight_edid.bin is an EDID with the CEA extension block that can be used by kernel parameter loading or parsed into Gamescope for HDR support
 
 ## Usage
+### Kernel override (Not recommended) 
 Place decksight_edid.bin in /lib/firmware/edid/decksight_edid.bin
 
 Add drm.edid_firmware=eDP-1:edid/decksight_edid.bin to end of GRUB_CMDLINE_LINUX_DEFAULT= in /etc/default/grub
@@ -10,7 +11,12 @@ Add drm.edid_firmware=eDP-1:edid/decksight_edid.bin to end of GRUB_CMDLINE_LINUX
 sudo update-grub
 sudo mkinitcpio -P
 
-## Notes
-The external EDID location is the typical Linux directory and is used because it is loaded early enough in the boot process to take over for the hardware EDID but it is overwritten by SteamOS updates.
+### For Gamescope (Recommended)
+Create directory and place decksight_edid.bin in ~/.local/share/decksight/
 
-Currently SteamOS on the LCD Steam Deck does not respect HDR EDID triggers even when loading an external EDID. This may be from the way the GPU driver is compiled. Otherwise on an external connector, it seems that Gamescope will trigger HDR controls based on some colorimetry data or HDR metadata in the CEA extension block. However it is not recognized as "HDR capable" unless BT2020 colorimetry is present. BT2020 in the EDID being enabled will cause color wash out. The correct mix of bridge/panel reconfigurations to make Gamescope happy with HDR is unknown, but since it's currently not respected on the eDP connector it is left out of the extended EDID to prevent the washout issue. The external EDID currently does not serve any useful purpose.
+Create directory and place decksight-edid.conf in ~/.config/environment.d/ - This file creates an environment variable which redirects gamescope to parse this extended EDID that can't (easily) be included in the Steam Deck's BIOS
+
+$ systemctl --user daemon-reexec
+
+## Notes
+If used via a kernel parameter, decksight_edid.bin becomes the system-wide EDID. The kernel parameter override is a typical Linux way of doing it but it's not recommended for the Steam Deck. Directing Gamescope towards the EDID is really all that is necessary as only Gamescope really cares about the extension block in SteamOS. The Gamescope method will also survive updates, which the kernel method will not on an immutable OS.
