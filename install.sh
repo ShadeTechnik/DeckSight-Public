@@ -176,15 +176,22 @@ main() {
         exit 1
     fi
 
+    # BIOS lock prompt
     if ! sudo -n true 2>/dev/null; then
-        zenity --info --title="DeckSight" --text="BIOS updates skipped because sudo password is not set."
-    elif zenity --question \
+        zenity --info --title="DeckSight" \
+            --text="Cannot check for BIOS lock or flash because sudo password is not available.\n\nPlease rerun the installer from a terminal or configure passwordless sudo if required."
+        exit 0
+    fi
+
+    # Offer to lock BIOS updates
+    if zenity --question \
         --title="DeckSight" \
         --text="Block BIOS updates?\n\nThis will prevent automatic updates from overwriting the DeckSight BIOS. You can still flash a BIOS manually, or via this installer in the future."; then
 
         zenity --info --title="DeckSight" --text="Locking BIOS update service. This will require sudo."
 
         sudo steamos-readonly disable || panic "Failed to disable read-only filesystem"
+
         sudo systemctl mask jupiter-biosupdate || panic "Failed to mask BIOS update service"
 
         sudo mkdir -p /foxnet/bios/ || panic "Failed to create /foxnet/bios directory"
@@ -198,22 +205,15 @@ main() {
         zenity --info --title="DeckSight" --text="BIOS update has been locked."
     fi
 
-    if ! sudo -n true 2>/dev/null; then
-        zenity --question --title="Sudo password required" \
-          --text="The BIOS update requires sudo access.\n\nClick OK to continue in a terminal."
-        catch_error "Installation aborted: sudo password is required."
 
-        if command -v konsole &>/dev/null; then
-            konsole --noclose -e bash -c "sudo /usr/share/jupiter_bios_updater/h2offt \"$bios_fd_path\"; echo; read -p 'Press Enter to close...'"
-        elif command -v xterm &>/dev/null; then
-            xterm -hold -e bash -c "sudo /usr/share/jupiter_bios_updater/h2offt \"$bios_fd_path\""
-        else
-            zenity --error --text="No terminal found to launch BIOS updater.\nPlease open a terminal and run:\nsudo /usr/share/jupiter_bios_updater/h2offt \"$bios_fd_path\""
-            exit 1
-        fi
+    # Perform BIOS update
+    if command -v konsole &>/dev/null; then
+        konsole --noclose -e bash -c "sudo /usr/share/jupiter_bios_updater/h2offt \"$bios_fd_path\"; echo; read -p 'Press Enter to close...'"
+    elif command -v xterm &>/dev/null; then
+        xterm -hold -e bash -c "sudo /usr/share/jupiter_bios_updater/h2offt \"$bios_fd_path\""
     else
-        sudo /usr/share/jupiter_bios_updater/h2offt "$bios_fd_path"
+        zenity --error --text="No terminal found to launch BIOS updater.\nPlease open a terminal and run:\nsudo /usr/share/jupiter_bios_updater/h2offt \"$bios_fd_path\""
+        exit 1
     fi
 }
-
 main "$@"
