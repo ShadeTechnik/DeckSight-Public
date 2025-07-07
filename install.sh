@@ -20,6 +20,16 @@ mkdir_all() {
     [ -d "$1" ] || mkdir -vp "$1"
 }
 
+catch_error() {
+    res=$?
+    if [ $res -eq 0 ]; then
+        return 0
+    fi
+    msg=$1
+    zenity --error --text="$msg: Failure"
+    exit 2
+}
+
 main() {
     local skip_bios_check=false
     for arg in "$@"; do
@@ -89,7 +99,7 @@ main() {
                     mkdir_all "$HOME/.local/bin/"
                     catch_error "failed to create $HOME/.local/bin/"
 
-                    cp -av "$script_dir/brightness-wrangler/brightness-wrangler.sh" "$HOME/.local/bin/"
+                    cp -av "$SCRIPT_DIR/brightness-wrangler/brightness-wrangler.sh" "$HOME/.local/bin/"
                     catch_error 'failed to install brightness-wrangler.sh'
 
                     chmod +x "$HOME/.local/bin/brightness-wrangler.sh"
@@ -107,6 +117,11 @@ main() {
                 ;;
         esac
     done
+
+        if [[ "$action" == "Remove" ]]; then
+            zenity --info --title "DeckSight" --text="Selected components have been removed.\n\nExiting installer."
+            exit 0
+        fi
 
         # Install BIOS
         if ! zenity --title "DeckSight" --question --text "Proceed with BIOS update to DeckSight ${PATCHED_BIOS_VERSION}?"; then
