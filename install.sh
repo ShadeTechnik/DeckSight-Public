@@ -84,8 +84,16 @@ main() {
                     fi
 
                     mkdir_all "$HOME/.config/systemd/user/"
-                    cp -av "$SCRIPT_DIR/brightness-wrangler/brightness-wrangler.sh" "$HOME/.local/bin/"
+                    catch_error "failed to create $HOME/.config/systemd/user/"
+
+                    mkdir_all "$HOME/.local/bin/"
+                    catch_error "failed to create $HOME/.local/bin/"
+
+                    cp -av "$script_dir/brightness-wrangler/brightness-wrangler.sh" "$HOME/.local/bin/"
+                    catch_error 'failed to install brightness-wrangler.sh'
+
                     chmod +x "$HOME/.local/bin/brightness-wrangler.sh"
+
                     systemctl --user daemon-reload
                     systemctl --user enable brightness-wrangler.service
                     systemctl --user restart brightness-wrangler.service
