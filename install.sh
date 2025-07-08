@@ -28,6 +28,16 @@ catch_error() {
     exit 2
 }
 
+zenity_sudo() {
+    PASSWORD=$(zenity --password --title="DeckSight Installer - Sudo Required") || exit 1
+    echo "$PASSWORD" | sudo -S -v >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        zenity --error --text="Incorrect password or sudo failed. Exiting."
+        exit 1
+    fi
+    export DECKSIGHT_SUDO_PASSWORD="$PASSWORD"
+}
+
 main() {
     SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
     echo "[DEBUG] SCRIPT_DIR=$SCRIPT_DIR"
@@ -37,7 +47,6 @@ main() {
 
     patched_bios_version="F7A0131"
 
-    # Ensure user systemd and DBUS session are available
     XDG_RUNTIME_DIR="/run/user/$(id -u)"
     export XDG_RUNTIME_DIR
     export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
@@ -63,7 +72,7 @@ main() {
         fi
     fi
 
-    zenity --title "DeckSight" --info --width=600 --text="You can first install the DeckSight extras (recommended), then the BIOS.\n\nOnce the BIOS is installed, the stock LCD will no longer operate properly (if currently installed).\n\nAfter the DeckSight BIOS is installed, you can install the DeckSight OLED.\n\nIf DeckSight is already installed, you can ignore this warning and use this installer to update or re-install the extras or BIOS.\n\nIf the charger is not plugged in, you should plug it in now to avoid disruptions while flashing the BIOS.\n\nOnce the BIOS is flashed, the Steam Deck will shut down. If the charger is plugged in it will turn itself back on when finished. If the charger is not plugged in, it will enter batter storage mode and will not turn back on until a charger is plugged in."
+    zenity --title "DeckSight" --info --width=600 --text="You can first install the DeckSight extras (recommended), then the BIOS.\n\nOnce the BIOS is installed, the stock LCD will no longer operate properly (if currently installed).\n\nAfter the DeckSight BIOS is installed, you can install the DeckSight OLED.\n\nIf DeckSight is already installed, you can ignore this warning and use this installer to update or re-install the extras or BIOS.\n\nIf the charger is not plugged in, you should plug it in now to avoid disruptions while flashing the BIOS.\n\nOnce the BIOS is flashed, the Steam Deck will shut down. If the charger is plugged in it will turn itself back on when finished. If the charger is not plugged in, it will enter battery storage mode and will not turn back on until a charger is plugged in."
 
     action=$(zenity --title "DeckSight" --list \
         --radiolist \
@@ -147,7 +156,6 @@ main() {
                     cp -v "$SCRIPT_DIR/edid/decksight-edid.conf" "$HOME/.config/environment.d/decksight-edid.conf"
                     catch_error "failed to copy decksight-edid.conf"
 
-                    # Refresh environment variables
                     systemctl --user import-environment DISPLAY XAUTHORITY
                     dbus-update-activation-environment --systemd DISPLAY XAUTHORITY
                 else
@@ -176,12 +184,8 @@ main() {
         exit 1
     fi
 
-    # BIOS lock prompt
-    if ! sudo -n true 2>/dev/null; then
-        zenity --info --title="DeckSight" \
-            --text="Cannot check for BIOS lock or flash because sudo password is not available.\n\nPlease rerun the installer from a terminal or configure passwordless sudo if required."
-        exit 0
-    fi
+    # Prompt for sudo using zenity
+    zenity_sudo
 
     # Offer to lock BIOS updates
     if zenity --question \
@@ -190,30 +194,21 @@ main() {
 
         zenity --info --title="DeckSight" --text="Locking BIOS update service. This will require sudo."
 
-        sudo steamos-readonly disable || panic "Failed to disable read-only filesystem"
-
-        sudo systemctl mask jupiter-biosupdate || panic "Failed to mask BIOS update service"
-
-        sudo mkdir -p /foxnet/bios/ || panic "Failed to create /foxnet/bios directory"
-        sudo touch /foxnet/bios/INHIBIT || panic "Failed to create INHIBIT flag"
-
-        sudo mkdir -p /usr/share/jupiter_bios/bak || panic "Failed to create BIOS backup folder"
-        sudo mv /usr/share/jupiter_bios/F* /usr/share/jupiter_bios/bak/ 2>/dev/null
-
-        sudo steamos-readonly enable || panic "Failed to re-enable read-only filesystem"
+        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S steamos-readonly disable || panic "Failed to disable read-only filesystem"
+        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S systemctl mask jupiter-biosupdate || panic "Failed to mask BIOS update service"
+        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S mkdir -p /foxnet/bios/ || panic "Failed to create /foxnet/bios directory"
+        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S touch /foxnet/bios/INHIBIT || panic "Failed to create INHIBIT flag"
+        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S mkdir -p /usr/share/jupiter_bios/bak || panic "Failed to create BIOS backup folder"
+        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S mv /usr/share/jupiter_bios/F* /usr/share/jupiter_bios/bak/ 2>/dev/null
+        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S steamos-readonly enable || panic "Failed to re-enable read-only filesystem"
 
         zenity --info --title="DeckSight" --text="BIOS update has been locked."
     fi
 
-
     # Perform BIOS update
-    if command -v konsole &>/dev/null; then
-        konsole --noclose -e bash -c "sudo /usr/share/jupiter_bios_updater/h2offt \"$bios_fd_path\"; echo; read -p 'Press Enter to close...'"
-    elif command -v xterm &>/dev/null; then
-        xterm -hold -e bash -c "sudo /usr/share/jupiter_bios_updater/h2offt \"$bios_fd_path\""
-    else
-        zenity --error --text="No terminal found to launch BIOS updater.\nPlease open a terminal and run:\nsudo /usr/share/jupiter_bios_updater/h2offt \"$bios_fd_path\""
-        exit 1
-    fi
+    echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S /usr/share/jupiter_bios_updater/h2offt "$bios_fd_path"
+
+    unset DECKSIGHT_SUDO_PASSWORD
 }
+
 main "$@"
