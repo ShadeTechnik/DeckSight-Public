@@ -85,7 +85,7 @@ main() {
         --width=500 --height=480 \
         --text="Choose which components to $action:\n\n\
     • Gamescope Script – framerate handling and modesetting in gamescope.\n\
-    • Brightness Wrangler – Gamma-based brightness control service in Desktop.\n\
+    • Brightness Wrangler – Gamma-based brightness control service.(X11/SteamOS desktop only)\n\
     • DeckSight EDID – Extended EDID for HDR support." \
         --column "Apply" --column "Component" \
         TRUE "Gamescope Script" \
@@ -171,10 +171,6 @@ main() {
         exit 0
     fi
 
-    if ! zenity --title "DeckSight" --question --text "Proceed with BIOS update to DeckSight ${patched_bios_version}?"; then
-        exit 0
-    fi
-
     rm -rf "$HOME/.local/share/kscreen/"*
 
     bios_fd_path=$(find "$SCRIPT_DIR/bios" -type f -name '*.fd' | head -n 1)
@@ -187,7 +183,7 @@ main() {
     # Prompt for sudo using zenity
     zenity_sudo
 
-    # Offer to lock BIOS updates
+    # Prompt to lock BIOS updates
     if zenity --question \
         --title="DeckSight" \
         --text="Block BIOS updates?\n\nThis will prevent automatic updates from overwriting the DeckSight BIOS. You can still flash a BIOS manually, or via this installer in the future."; then
@@ -205,7 +201,12 @@ main() {
         zenity --info --title="DeckSight" --text="BIOS update has been locked."
     fi
 
-    # Perform BIOS update
+    # Prompt for BIOS update
+    if ! zenity --title "DeckSight" --question \
+        --text="Proceed with BIOS update to DeckSight ${patched_bios_version}?"; then
+        exit 0
+    fi
+
     echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S /usr/share/jupiter_bios_updater/h2offt "$bios_fd_path"
 
     unset DECKSIGHT_SUDO_PASSWORD
