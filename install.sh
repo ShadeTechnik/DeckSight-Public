@@ -38,6 +38,26 @@ zenity_sudo() {
     export DECKSIGHT_SUDO_PASSWORD="$PASSWORD"
 }
 
+# --- OS detection helpers ---
+OS_ID=""; OS_ID_LIKE=""; OS_NAME=""; OS_VARIANT_ID="";
+detect_os() {
+    if [ -r /etc/os-release ]; then
+        # shellcheck disable=SC1091
+        . /etc/os-release
+        OS_ID="$ID"; OS_ID_LIKE="$ID_LIKE"; OS_NAME="$NAME"; OS_VARIANT_ID="$VARIANT_ID"
+    fi
+}
+
+is_steamos() {
+    detect_os
+    grep -qi steamos <<<"$OS_ID $OS_ID_LIKE $OS_NAME" 2>/dev/null
+}
+
+is_bazzite() {
+    detect_os
+    grep -qi bazzite <<<"$OS_ID $OS_VARIANT_ID $OS_NAME" 2>/dev/null
+}
+
 main() {
     SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
     echo "[DEBUG] SCRIPT_DIR=$SCRIPT_DIR"
@@ -50,6 +70,9 @@ main() {
     XDG_RUNTIME_DIR="/run/user/$(id -u)"
     export XDG_RUNTIME_DIR
     export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+
+    detect_os
+    echo "[INFO] Detected OS: ID=$OS_ID NAME=$OS_NAME VARIANT_ID=$OS_VARIANT_ID"
 
     local skip_bios_check=false
     for arg in "$@"; do
@@ -76,21 +99,33 @@ main() {
 
     action=$(zenity --title "DeckSight" --list \
         --radiolist \
-        --height=200 --width=300 \
+        --height=300 --width=300 \
         --text="Install or remove DeckSight extras?" \
         --column "Select" --column "Action" \
         TRUE "Install" FALSE "Remove") || exit 0
 
-    extras=$(zenity --title "DeckSight" --list --checklist \
-        --width=500 --height=480 \
-        --text="Choose which components to $action:\n\n\
+    # Adjust component list depending on OS
+    if is_bazzite; then
+        extras=$(zenity --title "DeckSight" --list --checklist \
+            --width=500 --height=420 \
+            --text="Choose which components to $action:\n\n\
     • Gamescope Script – framerate handling and modesetting in gamescope.\n\
-    • Brightness Wrangler – Gamma-based brightness control service.(X11/SteamOS desktop only)\n\
     • DeckSight EDID – Extended EDID for HDR support." \
-        --column "Apply" --column "Component" \
-        TRUE "Gamescope Script" \
-        TRUE "Brightness Wrangler" \
-        TRUE "DeckSight EDID") || exit 0
+            --column "Apply" --column "Component" \
+            TRUE "Gamescope Script" \
+            TRUE "DeckSight EDID") || exit 0
+    else
+        extras=$(zenity --title "DeckSight" --list --checklist \
+            --width=500 --height=480 \
+            --text="Choose which components to $action:\n\n\
+    • Gamescope Script – framerate handling and modesetting in gamescope.\n\
+    • Brightness Wrangler – Gamma-based brightness control service.(X11/SteamOS only)\n\
+    • DeckSight EDID – Extended EDID for HDR support." \
+            --column "Apply" --column "Component" \
+            TRUE "Gamescope Script" \
+            TRUE "Brightness Wrangler" \
+            TRUE "DeckSight EDID") || exit 0
+    fi
 
     cd "$SCRIPT_DIR" 2>/dev/null || {
       zenity --error --text="DeckSight install failed: extracted files not found."
@@ -111,43 +146,49 @@ main() {
                 fi
                 ;;
             "Brightness Wrangler")
-                if [[ "$action" == "Install" ]]; then
-                    if ! systemctl --user is-active --quiet default.target 2>/dev/null; then
-                        zenity --error --text="User systemd session is not active. Cannot enable Brightness Wrangler service."
-                        return 1
-                    fi
-
-                    mkdir_all "$HOME/.config/systemd/user/"
-                    catch_error "failed to create $HOME/.config/systemd/user/"
-
-                    mkdir_all "$HOME/.local/bin/"
-                    catch_error "failed to create $HOME/.local/bin/"
-
-                    cp -av "$SCRIPT_DIR/brightness-wrangler/brightness-wrangler.sh" "$HOME/.local/bin/"
-                    catch_error 'failed to install brightness-wrangler.sh'
-
-                    cp -v "$SCRIPT_DIR/brightness-wrangler/brightness-wrangler.service" "$HOME/.config/systemd/user/"
-                    catch_error 'failed to install brightness-wrangler.service'
-
-                    chmod +x "$HOME/.local/bin/brightness-wrangler.sh"
-
-                    systemctl --user daemon-reload
-                    catch_error 'systemctl daemon-reload failed'
-                    systemctl --user enable brightness-wrangler.service
-                    catch_error 'systemctl failed to enable brightness wrangler service'
-                    systemctl --user restart brightness-wrangler.service
-                    catch_error 'systemctl failed to restart brightness wrangler service'
+                # Only relevant on SteamOS/X11; skip if Bazzite
+                if is_bazzite; then
+                    echo "[INFO] Skipping Brightness Wrangler on Bazzite (Wayland)."
                 else
-                    systemctl --user disable brightness-wrangler.service
-                    systemctl --user stop brightness-wrangler.service
+                    if [[ "$action" == "Install" ]]; then
+                        if ! systemctl --user is-active --quiet default.target 2>/dev/null; then
+                            zenity --error --text="User systemd session is not active. Cannot enable Brightness Wrangler service."
+                            return 1
+                        fi
 
-                    rm -v "$HOME/.config/systemd/user/brightness-wrangler.service"
-                    rm -v "$HOME/.local/bin/brightness-wrangler.sh"
+                        mkdir_all "$HOME/.config/systemd/user/"
+                        catch_error "failed to create $HOME/.config/systemd/user/"
 
-                    systemctl --user daemon-reload
+                        mkdir_all "$HOME/.local/bin/"
+                        catch_error "failed to create $HOME/.local/bin/"
+
+                        cp -av "$SCRIPT_DIR/brightness-wrangler/brightness-wrangler.sh" "$HOME/.local/bin/"
+                        catch_error 'failed to install brightness-wrangler.sh'
+
+                        cp -v "$SCRIPT_DIR/brightness-wrangler/brightness-wrangler.service" "$HOME/.config/systemd/user/"
+                        catch_error 'failed to install brightness-wrangler.service'
+
+                        chmod +x "$HOME/.local/bin/brightness-wrangler.sh"
+
+                        systemctl --user daemon-reload
+                        catch_error 'systemctl daemon-reload failed'
+                        systemctl --user enable brightness-wrangler.service
+                        catch_error 'systemctl failed to enable brightness wrangler service'
+                        systemctl --user restart brightness-wrangler.service
+                        catch_error 'systemctl failed to restart brightness wrangler service'
+                    else
+                        systemctl --user disable brightness-wrangler.service
+                        systemctl --user stop brightness-wrangler.service
+
+                        rm -v "$HOME/.config/systemd/user/brightness-wrangler.service"
+                        rm -v "$HOME/.local/bin/brightness-wrangler.sh"
+
+                        systemctl --user daemon-reload
+                    fi
                 fi
                 ;;
             "DeckSight EDID")
+                # --- LEAVE THIS SECTION AS-IS (per user) ---
                 if [[ "$action" == "Install" ]]; then
                     mkdir_all "$HOME/.local/share/decksight/"
                     mkdir_all "$HOME/.config/environment.d/"
@@ -180,36 +221,55 @@ main() {
         exit 1
     fi
 
-    # Prompt for sudo using zenity
     zenity_sudo
 
-    # Prompt to lock BIOS updates
+    # --- Block BIOS updates (SteamOS or Bazzite) ---
     if zenity --question \
         --title="DeckSight" \
-        --text="Block BIOS updates?\n\nThis will prevent automatic updates from overwriting the DeckSight BIOS. You can still flash a BIOS manually, or via this installer in the future."; then
+        --text="Block BIOS updates?\n\nThis prevents automatic updates from overwriting the DeckSight BIOS. You can still flash manually or via this installer."; then
 
         zenity --info --title="DeckSight" --text="Locking BIOS update service. This will require sudo."
 
-        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S steamos-readonly disable || panic "Failed to disable read-only filesystem"
-        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S systemctl mask jupiter-biosupdate || panic "Failed to mask BIOS update service"
-        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S mkdir -p /foxnet/bios/ || panic "Failed to create /foxnet/bios directory"
-        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S touch /foxnet/bios/INHIBIT || panic "Failed to create INHIBIT flag"
-        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S mkdir -p /usr/share/jupiter_bios/bak || panic "Failed to create BIOS backup folder"
-        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S mv /usr/share/jupiter_bios/F* /usr/share/jupiter_bios/bak/ 2>/dev/null
-        echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S steamos-readonly enable || panic "Failed to re-enable read-only filesystem"
+        if is_steamos; then
+            # SteamOS: mask updater and create INHIBIT flag
+            if command -v steamos-readonly >/dev/null 2>&1; then
+                echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S steamos-readonly disable || panic "Failed to disable read-only filesystem"
+            fi
+            echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S systemctl mask jupiter-biosupdate || panic "Failed to mask BIOS update service"
+            echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S mkdir -p /foxnet/bios/ || panic "Failed to create /foxnet/bios directory"
+            echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S touch /foxnet/bios/INHIBIT || panic "Failed to create INHIBIT flag"
+            if command -v steamos-readonly >/dev/null 2>&1; then
+                echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S steamos-readonly enable || panic "Failed to re-enable read-only filesystem"
+            fi
 
-        zenity --info --title="DeckSight" --text="BIOS update has been locked."
+        elif is_bazzite; then
+            # Bazzite: use ujust convenience command
+            if command -v ujust >/dev/null 2>&1; then
+                echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S ujust disable-bios-updates || panic "ujust disable-bios-updates failed"
+            else
+                zenity --warning --title="DeckSight" --text="'ujust' not found. Skipping automated lock on Bazzite.\nYou can run it later: ujust disable-bios-updates"
+            fi
+
+        else
+            echo "[INFO] BIOS auto-update lock: unsupported OS; skipped"
+        fi
+
+        zenity --info --title="DeckSight" --text="BIOS updates have been locked."
     fi
 
-    # Prompt for BIOS update
+        # --- Confirm and Flash BIOS ---
     if ! zenity --title "DeckSight" --question \
-        --text="Proceed with BIOS update to DeckSight ${patched_bios_version}?"; then
+        --width=480 \
+        --text="Ready to flash the DeckSight BIOS (version: ${patched_bios_version}).
+
+    This will Flash The BIOS and the Deck will Reset.\nMake sure charger is connected or it will not restart until it is.
+
+        Proceed?"; then
+        zenity --info --title "DeckSight" --text="Flash canceled. No changes were made."
         exit 0
     fi
 
     echo "$DECKSIGHT_SUDO_PASSWORD" | sudo -S /usr/share/jupiter_bios_updater/h2offt "$bios_fd_path"
-
-    unset DECKSIGHT_SUDO_PASSWORD
 }
 
 main "$@"

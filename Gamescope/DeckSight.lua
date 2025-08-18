@@ -28,9 +28,9 @@ local deckSight_modegen = function(base_mode, refresh)
     -- Set fixed resolution for DeckSight OLED (rotated)
     gamescope.modegen.set_resolution(mode, 1080, 1920)
 
-    -- Set porch timings based on actual EDID values (mode, HFP, HSync, HBP)
-    gamescope.modegen.set_h_timings(mode, 60, 60, 16)
-    gamescope.modegen.set_v_timings(mode, 5, 5, 32)
+    -- Set porch timings based on CVT-RB v1 (mode, HFP, HSync, HBP)
+    gamescope.modegen.set_h_timings(mode, 48, 32, 80)
+    gamescope.modegen.set_v_timings(mode, 3, 10, 42)
 
     -- Recalculate pixel clock and vrefresh based on new timing and refresh
     mode.clock = gamescope.modegen.calc_max_clock(mode, refresh)
@@ -47,6 +47,7 @@ gamescope.config.known_displays.decksight = {
 
     colorimetry = decksight_oled_colorimetry_measured, --select measured or spec
 
+    -- luminance for HBM
     hdr = {
         supported = true,
         force_enabled = true,
