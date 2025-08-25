@@ -1,3 +1,5 @@
+-- DeckSight OLED (80 Hz base; VFP-only DRR downshifts, OLED Deck Style)
+
 local decksight_oled_colorimetry_spec = {
     r = { x = 0.6816, y = 0.3154 },
     g = { x = 0.2402, y = 0.7158 },
@@ -5,7 +7,7 @@ local decksight_oled_colorimetry_spec = {
     w = { x = 0.3095, y = 0.3164 }
 }
 
--- colorimetry measured without wide gamut support, this is for suppression. If WCG can be enabled in gamescope this may be detremental
+-- colorimetry measured
 local decksight_oled_colorimetry_measured = {
     r = { x = 0.6854, y = 0.3158 },
     g = { x = 0.2451, y = 0.7140 },
@@ -13,59 +15,65 @@ local decksight_oled_colorimetry_measured = {
     w = { x = 0.3117, y = 0.3197 }
 }
 
--- Static Dynamic Refresh Range (40-80Hz)
-local deckSight_refresh_rates = {
-    40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-    50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
-    60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
-    70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-    80
+local deckSight_refresh_rates = { 80, 75, 70, 65, 60, 55, 50, 45 }
+
+-- Expected 80 Hz base 197800 kHz, H=1080/1128/1160/1240, V base VFP=3 VSW=10 VBP=61
+local EXPECTED_CLOCK_KHZ_80 = 197800
+
+-- Precomputed VFPs when base is 80 Hz (your table, extended)
+local vfp_for_80 = {
+    [80] = 3,
+    [75] = 136,
+    [70] = 288,
+    [65] = 463,
+    [60] = 668,
+    [55] = 909,
+    [50] = 1199,
+    [45] = 1554,
 }
 
-local deckSight_modegen = function(base_mode, refresh)
-    local mode = base_mode
-
-    -- Set fixed resolution for DeckSight OLED (rotated)
-    gamescope.modegen.set_resolution(mode, 1080, 1920)
-
-    -- Set porch timings based on CVT-RB v1 (mode, HFP, HSync, HBP)
-    gamescope.modegen.set_h_timings(mode, 48, 32, 80)
-    gamescope.modegen.set_v_timings(mode, 3, 10, 42)
-
-    -- Recalculate pixel clock and vrefresh based on new timing and refresh
-    mode.clock = gamescope.modegen.calc_max_clock(mode, refresh)
-    mode.vrefresh = gamescope.modegen.calc_vrefresh(mode)
-
-    return mode
+local function is_base_80(m)
+return m.vrefresh == 80 and m.clock == EXPECTED_CLOCK_KHZ_80
 end
 
--- DeckSight OLED Registration
-gamescope.config.known_displays.decksight = {
-    pretty_name = "DeckSight OLED",
-    dynamic_refresh_rates = deckSight_refresh_rates,
-    dynamic_modegen = deckSight_modegen,
+local deckSight_modegen = function(base_mode, refresh)
+if not is_base_80(base_mode) then
+    debug(string.format("[DeckSight] Skip DRR: base %0.2f Hz @ %dkHz (expect 80 Hz @ %d kHz)",
+                        base_mode.vrefresh or -1, base_mode.clock or -1, EXPECTED_CLOCK_KHZ_80))
+    return base_mode
+    end
 
-    colorimetry = decksight_oled_colorimetry_measured, --select measured or spec
+    local vfp = vfp_for_80[refresh]
+    if not vfp then return base_mode end
 
-    -- luminance for HBM
-    hdr = {
-        supported = true,
-        force_enabled = true,
-        eotf = gamescope.eotf.gamma22,
-        max_content_light_level = 800,
-        max_frame_average_luminance = 700,
-        min_content_light_level = 0
-    },
-
-    matches = function(display)
-    if display.vendor == "DSO" and display.product == 0x5001 then
-        debug("[DeckSight] matched DSO:5001")
-        return 5000
+        local mode = base_mode
+        gamescope.modegen.adjust_front_porch(mode, vfp)
+        mode.vrefresh = gamescope.modegen.calc_vrefresh(mode)
+        return mode
         end
-        return -1
-        end
-}
 
-debug("Registered DeckSight OLED, don't hurt yourself")
+        gamescope.config.known_displays.decksight = {
+            pretty_name = "DeckSight OLED",
+            dynamic_refresh_rates = deckSight_refresh_rates,
+            dynamic_modegen = deckSight_modegen,
 
+            colorimetry = decksight_oled_colorimetry_spec, -- choose colorimetry
 
+            hdr = {
+                supported = true,
+                force_enabled = true,
+                    eotf = gamescope.eotf.gamma22,
+                    max_content_light_level = 900,
+                    max_frame_average_luminance = 700,
+                    min_content_light_level = 0,
+            },
+
+            matches = function(d)
+            if d.vendor == "DSO" and d.product == 0x5001 then
+                debug("[DeckSight] matched DSO:5001"); return 5000
+                end
+                return -1
+                end
+        }
+
+        debug("Registered DeckSight OLED, don't hurt yourself")
