@@ -1,3 +1,4 @@
+-- colorimetry spec
 local decksight_oled_colorimetry_spec = {
     r = { x = 0.6816, y = 0.3154 },
     g = { x = 0.2402, y = 0.7158 },
@@ -5,7 +6,7 @@ local decksight_oled_colorimetry_spec = {
     w = { x = 0.3095, y = 0.3164 }
 }
 
--- colorimetry measured without wide gamut support, this is for suppression. If WCG can be enabled in gamescope this may be detremental
+-- colorimetry measured
 local decksight_oled_colorimetry_measured = {
     r = { x = 0.6854, y = 0.3158 },
     g = { x = 0.2451, y = 0.7140 },
@@ -14,6 +15,7 @@ local decksight_oled_colorimetry_measured = {
 }
 
 -- Static Dynamic Refresh Range (40-80Hz)
+-- Omitted RRs with less stable inits
 local deckSight_refresh_rates = {
     40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
     50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
@@ -28,9 +30,10 @@ local deckSight_modegen = function(base_mode, refresh)
     -- Set fixed resolution for DeckSight OLED (rotated)
     gamescope.modegen.set_resolution(mode, 1080, 1920)
 
-    -- Set porch timings based on CVT-RB v1 (mode, HFP, HSync, HBP)
+    -- Set porch timings based on actual EDID values (mode, FP, Sync, BP)
+    -- vsync increase seems to improve init sync
     gamescope.modegen.set_h_timings(mode, 48, 32, 80)
-    gamescope.modegen.set_v_timings(mode, 3, 10, 42)
+    gamescope.modegen.set_v_timings(mode, 3, 14, 61)
 
     -- Recalculate pixel clock and vrefresh based on new timing and refresh
     mode.clock = gamescope.modegen.calc_max_clock(mode, refresh)
@@ -47,7 +50,6 @@ gamescope.config.known_displays.decksight = {
 
     colorimetry = decksight_oled_colorimetry_measured, --select measured or spec
 
-    -- luminance for HBM
     hdr = {
         supported = true,
         force_enabled = true,
