@@ -65,7 +65,7 @@ main() {
     logfile="/tmp/decksight-install.log"
     exec > >(tee -a "$logfile") 2>&1
 
-    patched_bios_version="F7A0131"
+    patched_bios_version="F7A0133"
 
     XDG_RUNTIME_DIR="/run/user/$(id -u)"
     export XDG_RUNTIME_DIR
