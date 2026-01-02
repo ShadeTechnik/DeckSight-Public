@@ -110,21 +110,25 @@ main() {
             --width=500 --height=420 \
             --text="Choose which components to $action:\n\n\
     • Gamescope Script – framerate handling and modesetting in gamescope.\n\
-    • DeckSight EDID – Extended EDID for HDR support." \
+    • DeckSight EDID – Extended EDID for HDR support.\n\
+    • DeckSight Decky Plugin – Controls Brightness in Gamescope" \
             --column "Apply" --column "Component" \
             TRUE "Gamescope Script" \
-            TRUE "DeckSight EDID") || exit 0
+            TRUE "DeckSight EDID" \
+            TRUE "DeckSight Decky Plugin") || exit 0
     else
         extras=$(zenity --title "DeckSight" --list --checklist \
             --width=500 --height=480 \
             --text="Choose which components to $action:\n\n\
     • Gamescope Script – framerate handling and modesetting in gamescope.\n\
     • Brightness Wrangler – Gamma-based brightness control service.(X11/SteamOS only)\n\
-    • DeckSight EDID – Extended EDID for HDR support." \
+    • DeckSight EDID – Extended EDID for HDR support.\n\
+    • DeckSight Decky Plugin – Controls Brightness in Gamescope." \
             --column "Apply" --column "Component" \
             TRUE "Gamescope Script" \
             TRUE "Brightness Wrangler" \
-            TRUE "DeckSight EDID") || exit 0
+            TRUE "DeckSight EDID" \
+            TRUE "DeckSight Decky Plugin") || exit 0
     fi
 
     cd "$SCRIPT_DIR" 2>/dev/null || {
@@ -204,6 +208,20 @@ main() {
                     rm -v "$HOME/.config/environment.d/decksight-edid.conf"
                 fi
                 ;;
+            "DeckSight Decky Plugin")
+                if [[ "$action" == "Install" ]]; then
+                    decky_zip=$(find "$SCRIPT_DIR" -maxdepth 2 -type f -name 'Decksight-Decky*.zip' | head -n 1)
+                    if [[ -z "$decky_zip" ]]; then
+                        zenity --warning --title "DeckSight" --text="DeckSight-Decky plugin not found in download package.\n\nThis is included in the release, if you downloaded this in some other form,\nyou will need to manually extract it from the release package."
+                        continue
+                    fi
+                    cp -v "$decky_zip" "$HOME/"
+                    catch_error 'failed to copy DeckSight Decky plugin zip'
+                    zenity --info --title "DeckSight" --width=600 --text="DeckSight Decky loader plugin has been copied to the home directory.\n\nTo install this, you must have Decky-Loader installed.\n\nFrom within Decky-Loader, go to settings (gear icon) -> General and turn on "Developer Mode".\n\nThen, go to Developer -> "Install Plugin From ZIP File" and click "Browse".\n\nNavigate to the DeckSight-Decky zip file and choose it.\n\nYou will then have the DeckSight-Decky plugin installed."
+                else
+                    rm -v "$HOME"/Decksight-Decky*.zip 2>/dev/null || true
+                fi
+                ;;
         esac
     done
 
@@ -226,7 +244,7 @@ main() {
     # --- Block BIOS updates (SteamOS or Bazzite) ---
     if zenity --question \
         --title="DeckSight" \
-        --text="Block BIOS updates?\n\nThis prevents automatic updates from overwriting the DeckSight BIOS. You can still flash manually or via this installer."; then
+        --text=     "Block BIOS updates?\n\nThis prevents automatic updates from overwriting the DeckSight BIOS during normal updates. You can still flash manually or via this installer.\n\nNote: Full system updates can NOT be blocked from flashing the BIOS in SteamOS. When this happens, you WILL have to re-run whis installer to flash back to the DeckSight BIOS,this may require an external monitor."; then
 
         zenity --info --title="DeckSight" --text="Locking BIOS update service. This will require sudo."
 
@@ -260,12 +278,9 @@ main() {
         # --- Confirm and Flash BIOS ---
     if ! zenity --title "DeckSight" --question \
         --width=480 \
-        --text="Ready to flash the DeckSight BIOS (version: ${patched_bios_version}).
-
-    This will Flash The BIOS and the Deck will Reset.\nMake sure charger is connected or it will not restart until it is.
-
-        Proceed?"; then
-        zenity --info --title "DeckSight" --text="Flash canceled. No changes were made."
+        --text="Ready to flash the DeckSight BIOS (version: ${patched_bios_version}).\n\nThis will Flash The BIOS and the Deck will Reset.\n\nMake sure charger is connected or it will not restart until it is.
+        \nProceed?"; then
+        zenity --info --title "DeckSight" --text="Flash canceled. BIOS will not be flashed."
         exit 0
     fi
 

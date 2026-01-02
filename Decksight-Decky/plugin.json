@@ -1,0 +1,11 @@
+{
+  "name": "DeckSight",
+  "author": "Shade Technik",
+  "flags": ["debug", "_root"],
+  "api_version": 1,
+  "publish": {
+    "tags": ["template", "root"],
+    "description": "DeckSight utilities",
+    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+  }
+}
