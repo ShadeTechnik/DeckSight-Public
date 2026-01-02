@@ -192,7 +192,6 @@ main() {
                 fi
                 ;;
             "DeckSight EDID")
-                # --- LEAVE THIS SECTION AS-IS (per user) ---
                 if [[ "$action" == "Install" ]]; then
                     mkdir_all "$HOME/.local/share/decksight/"
                     mkdir_all "$HOME/.config/environment.d/"
@@ -217,7 +216,9 @@ main() {
                     fi
                     cp -v "$decky_zip" "$HOME/"
                     catch_error 'failed to copy DeckSight Decky plugin zip'
-                    zenity --info --title "DeckSight" --width=600 --text="DeckSight Decky loader plugin has been copied to the home directory.\n\nTo install this, you must have Decky-Loader installed.\n\nFrom within Decky-Loader, go to settings (gear icon) -> General and turn on "Developer Mode".\n\nThen, go to Developer -> "Install Plugin From ZIP File" and click "Browse".\n\nNavigate to the DeckSight-Decky zip file and choose it.\n\nYou will then have the DeckSight-Decky plugin installed."
+                    zenity --info --title "DeckSight" \
+                    --height=300 --width=440 \
+                    --text="DeckSight Decky loader plugin has been copied to the home directory.\n\nTo install this, you must have Decky-Loader installed.\n\nFrom within Decky-Loader, go to:\nSettings (gear icon) -> General and turn on Developer Mode.\n\nThen, go to Developer -> Install Plugin From ZIP File and click Browse.\n\nNavigate to the DeckSight-Decky zip file and choose it.\n\nYou will then have the DeckSight-Decky plugin installed."
                 else
                     rm -v "$HOME"/Decksight-Decky*.zip 2>/dev/null || true
                 fi
@@ -244,7 +245,7 @@ main() {
     # --- Block BIOS updates (SteamOS or Bazzite) ---
     if zenity --question \
         --title="DeckSight" \
-        --text=     "Block BIOS updates?\n\nThis prevents automatic updates from overwriting the DeckSight BIOS during normal updates. You can still flash manually or via this installer.\n\nNote: Full system updates can NOT be blocked from flashing the BIOS in SteamOS. When this happens, you WILL have to re-run whis installer to flash back to the DeckSight BIOS,this may require an external monitor."; then
+        --text="Block BIOS updates?\n\nThis prevents automatic updates from overwriting the DeckSight BIOS during normal updates. You can still flash manually or via this installer.\n\nNote: Full system updates can NOT be blocked from flashing the BIOS in SteamOS. When this happens, you WILL have to re-run whis installer to flash back to the DeckSight BIOS,this may require an external monitor."; then
 
         zenity --info --title="DeckSight" --text="Locking BIOS update service. This will require sudo."
 
