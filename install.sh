@@ -210,7 +210,7 @@ main() {
                 ;;
             "DeckSight Decky Plugin")
                 if [[ "$action" == "Install" ]]; then
-                    decky_zip=$(find "$SCRIPT_DIR" -maxdepth 2 -type f -name 'Decksight-Decky*.zip' | head -n 1)
+                    decky_zip=$(find "$SCRIPT_DIR" -maxdepth 4 -type f -iname 'DeckSight-Decky*.zip' | head -n 1)
                     if [[ -z "$decky_zip" ]]; then
                         zenity --warning --title "DeckSight" --text="DeckSight-Decky plugin not found in download package.\n\nThis is included in the release, if you downloaded this in some other form,\nyou will need to manually extract it from the release package."
                         continue
