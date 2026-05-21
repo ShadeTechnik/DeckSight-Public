@@ -8,9 +8,10 @@ release from this repo, flashing the BIOS, etc. This repo does not contain gener
 ## Components
  
 - ## Brightness-wrangler
-    - Note: This is a legacy service that creates a software brightness adjustment in the Desktop mode as hardware control was not possible at release. This will likely be removed in favor of decksight-brightnessctrl
+    - Note: This is a legacy service that creates a software brightness adjustment in the Desktop mode as hardware control was not possible at release. This will likely be removed in favor of [decksight-brightnessctrl](https://github.com/ShadeTechnik/DeckSight-Public/discussions/41).
+      decksight-brightnessctrl is a hardware brightness adjustment. It has been tested but has not made it's way into a new installer yet. The recommendation is to just leave Brightness-wrangler uchecked when running the installer and install decksight-brightnessctrl as explained in the thread.
     - Service that monitors the AMDGPU backlight interface and applies a gamma based brightness control through xrandr
-    - If running Bazzite or something that uses KDE under Wayland for the desktop environment this is probably unnecessary as KDE/Wayland can already do this. SteamOS runs under X11 for the desktop and there generally isn't another way to do this in X11. Gamma based brightness on an OLED is actually pretty good, but at some point this may be unnecessary if hardware based brightness control is made to work.
+    - Brightness-wrangler only works in X11, which means it will not work on Bazzite etc,
     
 - ## DeckSight.lua Gamescope script.
     - Adds modesetting and incrimental frame limits for DeckSight. SteamOS current Stable (3.7.8) has a version of gamescope that supports lua scripts in user directories. Older versions of SteamOS may not work with it. In that case the frame limit slider will only work in about 20hz incriments. 
