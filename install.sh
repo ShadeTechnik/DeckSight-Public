@@ -109,8 +109,8 @@ main() {
         extras=$(zenity --title "DeckSight" --list --checklist \
             --width=500 --height=420 \
             --text="Choose which components to $action:\n\n\
-    • Gamescope Script – framerate handling and modesetting in gamescope.\n\
-    • DeckSight EDID – Extended EDID for HDR support." \
+    * Gamescope Script - framerate handling and modesetting in gamescope.\n\
+    * DeckSight EDID - Extended EDID for HDR support." \
             --column "Apply" --column "Component" \
             TRUE "Gamescope Script" \
             TRUE "DeckSight EDID") || exit 0
@@ -118,9 +118,9 @@ main() {
         extras=$(zenity --title "DeckSight" --list --checklist \
             --width=500 --height=480 \
             --text="Choose which components to $action:\n\n\
-    • Gamescope Script – framerate handling and modesetting in gamescope.\n\
-    • Brightness Wrangler – Gamma-based brightness control service.(X11/SteamOS only)\n\
-    • DeckSight EDID – Extended EDID for HDR support." \
+    * Gamescope Script - framerate handling and modesetting in gamescope.\n\
+    * Brightness Wrangler - Gamma-based brightness control service.(X11/SteamOS only)\n\
+    * DeckSight EDID - Extended EDID for HDR support." \
             --column "Apply" --column "Component" \
             TRUE "Gamescope Script" \
             TRUE "Brightness Wrangler" \
